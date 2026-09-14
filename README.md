@@ -1,51 +1,28 @@
 # SpatialAI
 
-Quest 3 空间 AI 助手 - 指向现实物体，AI 识别并回答问题
+Quest 3 空间 AI 助手 - 拍照识别物体并智能问答
 
 ## 功能流程
 
-```text
-① Quest 3 Passthrough 看到现实环境
-        ↓
-② 用户用手柄指向物体并点击
-        ↓
-③ 捕获图像
-        ↓
-④ Qwen-VL 识别物体
-        ↓
-⑤ LLM 生成 3-5 个推荐问题
-        ↓
-⑥ 用户点击选择问题
-        ↓
-⑦ LLM 回答
-        ↓
-⑧ Quest 3 空间 UI 显示答案
+```
+拍照 → 识别物体 → 生成问题 → 选择问题 → 显示答案
 ```
 
 ## 项目结构
 
-```text
+```
 SpatialAI/
-├── Backend/        # AI 后端服务（Python FastAPI）
-│   ├── vision/     # Qwen-VL 视觉识别
-│   ├── llm/        # 语言模型服务
-│   ├── main.py     # FastAPI 主服务
-│   └── config.py   # 配置管理
-├── Unity/          # Quest 3 应用（Unity 项目）
-│   ├── Scripts/    # C# 脚本
-│   │   ├── Core/
-│   │   ├── Network/
-│   │   ├── Camera/
-│   │   ├── Interaction/
-│   │   └── UI/
-│   └── PROJECT_SETUP.md
-└── Docs/
-    └── plan.md     # 详细开发计划
+├── Backend/              # Python FastAPI 后端
+│   ├── vision/          # 视觉识别服务 (DeepSeek Vision)
+│   ├── llm/             # LLM 服务 (DeepSeek)
+│   ├── main.py          # 主服务
+│   └── config.py        # 配置管理
+└── captured_images/     # 拍照图片保存
 ```
 
 ## 快速开始
 
-### 1. Backend 部署
+### 1. Backend 配置
 
 ```bash
 cd Backend
@@ -55,83 +32,99 @@ pip install -r requirements.txt
 
 # 配置 API
 cp .env.example .env
-# 编辑 .env 填写你的 API Key
+# 编辑 .env 填写 DeepSeek API Key
 
 # 启动服务
 python main.py
 ```
 
-详见 `Backend/DEPLOY.md`
+### 2. 配置说明
 
-### 2. Unity 项目
+`.env` 文件：
 
-1. 使用 Unity Hub 创建新项目（Unity 2022.3 LTS）
-2. 安装 Meta Quest SDK
-3. 导入 `Unity/Scripts/` 下的所有脚本
-4. 配置场景和 UI
-5. 构建并部署到 Quest 3
+```env
+# DeepSeek API
+DEEPSEEK_API_KEY=your_api_key_here
+DEEPSEEK_API_URL=https://api.deepseek.com/v1
 
-详见 `Unity/PROJECT_SETUP.md`
-
-### 3. 测试连接
-
-```bash
-# 测试 Backend API
-python Backend/test_api.py
-
-# 或指定工作站 IP
-python Backend/test_api.py http://192.168.1.100:8000
+# 服务配置
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8000
 ```
 
-## 环境要求
+### 3. Unity 配置
 
-### 硬件
+在 `QuestVisionCapture.cs` 中修改后端地址：
 
-- **Quest 3**（Wi-Fi 连接，可访问局域网）
-- **工作站**（显存 16GB+，网线连接）
-
-### 软件
-
-- Python 3.10+
-- Unity 2022.3 LTS+
-- Meta Quest SDK
-- Qwen-VL API / LLM API
-
-## 网络配置
-
-```text
-Quest 3（Wi-Fi 5GHz）
-   ↓
-局域网路由器
-   ↓
-工作站（有线网络）
-   ├── Backend API (端口 8000)
-   ├── Qwen-VL
-   └── LLM
+```csharp
+public string backendUrl = "http://YOUR_PC_IP:8000/api/v1/analyze";
 ```
 
-Unity 中配置 Backend URL：`http://工作站IP:8000`
+## API 接口
+
+### POST /api/v1/analyze
+识别物体并生成问题
+
+**Request:**
+```json
+{
+  "image": "base64_encoded_image"
+}
+```
+
+**Response:**
+```json
+{
+  "object": "computer monitor",
+  "description": "A desktop monitor display",
+  "questions": [
+    "What is this?",
+    "How to use it?",
+    "What are common problems?"
+  ]
+}
+```
+
+### POST /api/v1/answer
+回答问题
+
+**Request:**
+```json
+{
+  "object": "computer monitor",
+  "question": "How to use it?"
+}
+```
+
+**Response:**
+```json
+{
+  "answer": "To use a monitor..."
+}
+```
+
+## 技术栈
+
+- **后端**: Python 3.10+, FastAPI
+- **视觉**: DeepSeek Vision API
+- **LLM**: DeepSeek API
+- **前端**: Unity 2022.3 LTS, Meta Quest SDK
+- **设备**: Meta Quest 3
+
+## 网络要求
+
+- Quest 3 和 PC 在同一局域网
+- PC 防火墙允许 8000 端口
+- Quest 3 可以访问 PC 的 IP 地址
 
 ## 开发状态
 
-- ✅ Backend API 框架完成
-- ✅ Unity 脚本框架完成
-- ⏳ Unity 场景搭建（待进行）
-- ⏳ Quest Camera API 集成（待进行）
-- ⏳ 完整流程测试（待进行）
+- ✅ Backend API 完成
+- ✅ 视觉识别集成
+- ✅ LLM 问答集成
+- ✅ Unity Quest 3 集成
+- ✅ 完整流程测试通过
 
-## 下一步
+## License
 
-1. **配置 Backend**：填写 `.env` 中的 API 信息
-2. **测试 Backend**：运行 `test_api.py` 确保服务正常
-3. **创建 Unity 项目**：按照 `Unity/PROJECT_SETUP.md` 操作
-4. **导入脚本**：将 `Unity/Scripts/` 导入项目
-5. **搭建场景**：配置 OVRCameraRig + UI
-6. **部署测试**：构建到 Quest 3 测试完整流程
-
-## 文档
-
-- 详细计划：`Docs/plan.md`
-- Backend 部署：`Backend/DEPLOY.md`
-- Unity 设置：`Unity/PROJECT_SETUP.md`
-- 脚本说明：`Unity/Scripts/README.md`
+MIT
