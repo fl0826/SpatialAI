@@ -43,7 +43,6 @@ env/
 *.mdb.meta
 
 sysinfo.txt
-*.apk
 *.aab
 *.unitypackage
 
